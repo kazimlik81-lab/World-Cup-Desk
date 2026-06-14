@@ -1,0 +1,7 @@
+.next
+node_modules
+release
+npm-debug.log
+Dockerfile
+deploy
+electron/application-settings.json

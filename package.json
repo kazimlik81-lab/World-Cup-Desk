@@ -1,0 +1,79 @@
+{
+  "name": "world-cup-desk",
+  "version": "0.1.0",
+  "description": "Secure Windows and web World Cup news desk",
+  "author": "World Cup Desk",
+  "private": true,
+  "main": "electron/main.cjs",
+  "productName": "World Cup Desk",
+  "scripts": {
+    "dev": "next dev -H 127.0.0.1 -p 15174",
+    "dev:desktop": "node scripts/dev-desktop.mjs",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p 3000",
+    "desktop:open": "electron electron/main.cjs",
+    "pack:win": "npm run build && electron-builder --win --x64 --dir",
+    "dist:win": "npm run build && electron-builder --win --x64",
+    "check": "next build"
+  },
+  "dependencies": {
+    "lucide-react": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "selfsigned": "latest"
+  },
+  "overrides": {
+    "postcss": "^8.5.10"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "electron": "latest",
+    "electron-builder": "latest",
+    "typescript": "latest"
+  },
+  "build": {
+    "appId": "com.worldcupdesk.app",
+    "productName": "World Cup Desk",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".next/standalone",
+        "to": "app-server",
+        "filter": [
+          "**/*",
+          "!node_modules/**"
+        ]
+      },
+      {
+        "from": ".next/standalone/node_modules",
+        "to": "app-server/dependencies",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": ".next/static",
+        "to": "app-server/.next/static"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
