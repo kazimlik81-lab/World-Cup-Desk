@@ -54,6 +54,6 @@ export const WORLD_CUP_RELEVANCE_TERMS = [
 ];
 
 export const REPORT_SUMMARY =
-  "Официальный PDF-отчет FIFA Training Centre: составы, xG, фазы игры, передачи, прессинг и расширенная статистика матча.";
+  "Official FIFA Training Centre PDF report: lineups, xG, phases, passing, pressing, and extended match statistics.";
 
 export const MAXIMUM_SUMMARY_LENGTH = 240;

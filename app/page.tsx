@@ -1,34 +1,62 @@
 "use client";
 
 import {
-  AlertTriangle,
+  Activity,
   CalendarDays,
-  ExternalLink,
-  FileText,
-  Newspaper,
+  Gamepad2,
+  LockKeyhole,
+  Plane,
   RefreshCw,
-  Rss,
-  Search
+  Search,
+  ShieldCheck,
+  Trophy,
+  Users
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
-import { APPLICATION_TIME_ZONE, FIFA_OFFICIAL_NEWS_URL } from "@/lib/constants";
-import type { FeedItemType, WorldCupFeedItem, WorldCupFeedPayload } from "@/lib/types";
+import { ErrorBanner } from "@/app/components/error-banner";
+import { LanguageSelector } from "@/app/components/language-selector";
+import { MatchReportModal } from "@/app/components/match-report-modal";
+import { MatchRow } from "@/app/components/match-row";
+import { MetricCard } from "@/app/components/metric-card";
+import { NewsCard } from "@/app/components/news-card";
+import { NewsModal } from "@/app/components/news-modal";
+import { StatisticsPanel } from "@/app/components/statistics-panel";
+import { TournamentTable } from "@/app/components/tournament-table";
+import { APPLICATION_TIME_ZONE } from "@/lib/constants";
+import { appCopies, languageDateLocales, type AppCopy } from "@/lib/localization";
+import { useLanguagePreference } from "@/lib/use-language-preference";
+import {
+  allMatches,
+  playerStatistics,
+  teamStatistics,
+  tournamentGroups,
+  type ChampionshipNewsItem,
+  type GroupCode,
+  type MatchEntry,
+  type TournamentGroup
+} from "@/lib/tournament-data";
+import type { WorldCupFeedItem, WorldCupFeedPayload } from "@/lib/types";
 
-type FeedFilter = FeedItemType | "all";
-
-const TYPE_FILTERS: Array<{ value: FeedFilter; label: string }> = [
-  { value: "all", label: "Все" },
-  { value: "news", label: "Новости" },
-  { value: "report", label: "Отчеты" }
-];
+type MatchFilter = "all" | "finished" | "scheduled";
 
 export default function Home(): ReactElement {
+  const [selectedLanguage, setSelectedLanguage] = useLanguagePreference();
   const [feedPayload, setFeedPayload] = useState<WorldCupFeedPayload | null>(null);
-  const [selectedType, setSelectedType] = useState<FeedFilter>("all");
-  const [selectedSource, setSelectedSource] = useState("all");
+  const [selectedGroupCode, setSelectedGroupCode] = useState<GroupCode>("A");
+  const [selectedMatchFilter, setSelectedMatchFilter] = useState<MatchFilter>("all");
   const [searchText, setSearchText] = useState("");
+  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const [selectedMatchReport, setSelectedMatchReport] = useState<MatchEntry | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const copy = appCopies[selectedLanguage];
+  const dateLocale = languageDateLocales[selectedLanguage];
+  const matchFilters: Array<{ value: MatchFilter; label: string }> = [
+    { value: "all", label: copy.matchFilters.all },
+    { value: "finished", label: copy.matchFilters.finished },
+    { value: "scheduled", label: copy.matchFilters.scheduled }
+  ];
 
   const loadFeed = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -62,268 +90,299 @@ export default function Home(): ReactElement {
     return () => window.clearInterval(refreshInterval);
   }, [loadFeed]);
 
-  const sourceOptions = useMemo<string[]>(() => {
-    if (!feedPayload) {
-      return ["all"];
+  useEffect(() => {
+    if (!isNewsModalOpen && !selectedMatchReport) {
+      return;
     }
 
-    const sourceNames = new Set<string>();
-    for (const feedItem of feedPayload.items) {
-      sourceNames.add(feedItem.sourceName);
+    const closeOnEscape = (keyboardEvent: KeyboardEvent): void => {
+      if (keyboardEvent.key === "Escape") {
+        setIsNewsModalOpen(false);
+        setSelectedMatchReport(null);
+      }
+    };
+
+    document.body.classList.add("modal-open");
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.classList.remove("modal-open");
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isNewsModalOpen, selectedMatchReport]);
+
+  const selectedGroup = useMemo<TournamentGroup>(() => {
+    const matchingGroup = tournamentGroups.find((group) => group.groupCode === selectedGroupCode);
+
+    if (!matchingGroup) {
+      throw new Error(`Unknown group selected: ${selectedGroupCode}`);
     }
 
-    return ["all", ...Array.from(sourceNames).sort()];
-  }, [feedPayload]);
+    return matchingGroup;
+  }, [selectedGroupCode]);
 
-  const visibleItems = useMemo<WorldCupFeedItem[]>(() => {
-    if (!feedPayload) {
-      return [];
+  const liveNewsItems = useMemo<ChampionshipNewsItem[]>(() => {
+    const feedNewsItems = feedPayload?.items.filter((feedItem) => feedItem.type === "news") ?? [];
+
+    if (feedNewsItems.length === 0) {
+      return toLocalizedChampionshipNewsItems(copy.fallbackNews);
     }
 
-    const normalizedSearchText = searchText.trim().toLowerCase();
-    const filteredItems: WorldCupFeedItem[] = [];
+    return feedNewsItems.slice(0, 6).map(toChampionshipNewsItem);
+  }, [copy.fallbackNews, feedPayload]);
 
-    for (const feedItem of feedPayload.items) {
-      if (selectedType !== "all" && feedItem.type !== selectedType) {
-        continue;
+  const visibleMatches = useMemo<MatchEntry[]>(() => {
+    return filterMatches(searchText, selectedMatchFilter);
+  }, [searchText, selectedMatchFilter]);
+
+  const localizedTeamStatistics = useMemo(() => {
+    return teamStatistics.map((teamStatistic, teamStatisticIndex) => {
+      const statisticCopy = copy.teamStatistics[teamStatisticIndex];
+
+      if (!statisticCopy) {
+        return teamStatistic;
       }
 
-      if (selectedSource !== "all" && feedItem.sourceName !== selectedSource) {
-        continue;
-      }
+      return {
+        ...teamStatistic,
+        label: statisticCopy.label,
+        value: statisticCopy.value
+      };
+    });
+  }, [copy.teamStatistics]);
 
-      if (normalizedSearchText) {
-        const searchableText = `${feedItem.title} ${feedItem.summary} ${feedItem.sourceName}`
-          .toLowerCase()
-          .trim();
-
-        if (!searchableText.includes(normalizedSearchText)) {
-          continue;
-        }
-      }
-
-      filteredItems.push(feedItem);
-    }
-
-    return filteredItems;
-  }, [feedPayload, searchText, selectedSource, selectedType]);
-
-  const newsCount = feedPayload?.items.filter((feedItem) => feedItem.type === "news").length ?? 0;
-  const reportCount =
-    feedPayload?.items.filter((feedItem) => feedItem.type === "report").length ?? 0;
-  const activeSourceCount =
-    feedPayload?.sources.filter((sourceStatus) => sourceStatus.status === "ok").length ?? 0;
+  const finishedMatchCount = allMatches.filter((matchEntry) => matchEntry.status === "finished").length;
+  const scheduledMatchCount = allMatches.length - finishedMatchCount;
 
   return (
     <main className="application-shell">
-      <section className="top-panel" aria-label="World Cup Desk">
-        <div className="brand-block">
-          <div className="brand-mark">
-            <Rss size={22} aria-hidden="true" />
+      <section className="hero-panel" aria-label={copy.home.heroLabel}>
+        <div className="hero-content">
+          <div className="brand-row">
+            <div className="brand-mark">
+              <Trophy size={24} aria-hidden="true" />
+            </div>
+            <div>
+              <p className="eyebrow">{copy.home.eyebrow}</p>
+              <h1>{copy.home.title}</h1>
+            </div>
+          </div>
+          <p className="hero-copy">{copy.home.copy}</p>
+          <div className="hero-actions" aria-label={copy.home.actionsLabel}>
+            <button
+              className="primary-action"
+              type="button"
+              onClick={() => setIsNewsModalOpen(true)}
+              aria-haspopup="dialog"
+            >
+              <Plane size={18} aria-hidden="true" />
+              {copy.home.openNews}
+            </button>
+            <button className="secondary-action" type="button" onClick={loadFeed} disabled={isLoading}>
+              <RefreshCw className={isLoading ? "spin" : ""} size={18} aria-hidden="true" />
+              {copy.home.refreshFeed}
+            </button>
+            <Link className="icon-action" href="/jumdo-javelin" aria-label={copy.home.openGameLabel}>
+              <Gamepad2 size={18} aria-hidden="true" />
+            </Link>
+            <LanguageSelector
+              selectedLanguage={selectedLanguage}
+              onSelectLanguage={setSelectedLanguage}
+              ariaLabel={copy.language.selectorLabel}
+            />
+          </div>
+        </div>
+
+        <div className="security-panel" aria-label={copy.home.securityLabel}>
+          <div className="security-icon">
+            <LockKeyhole size={22} aria-hidden="true" />
           </div>
           <div>
-            <p className="eyebrow">Локальная программа</p>
-            <h1>World Cup Desk</h1>
+            <span>{copy.home.httpsEnabled}</span>
+            <strong>{copy.home.secureByDefault}</strong>
+            <p>{copy.home.secureCopy}</p>
           </div>
         </div>
-
-        <div className="toolbar">
-          <a className="source-link" href={FIFA_OFFICIAL_NEWS_URL} target="_blank" rel="noreferrer">
-            FIFA.com
-            <ExternalLink size={16} aria-hidden="true" />
-          </a>
-          <button className="refresh-button" type="button" onClick={loadFeed} disabled={isLoading}>
-            <RefreshCw className={isLoading ? "spin" : ""} size={17} aria-hidden="true" />
-            Обновить
-          </button>
-        </div>
       </section>
 
-      <section className="status-grid" aria-label="Сводка">
-        <MetricCard label="Новости" value={newsCount.toString()} icon={<Newspaper size={19} />} />
-        <MetricCard label="Отчеты PDF" value={reportCount.toString()} icon={<FileText size={19} />} />
+      <section className="metric-grid" aria-label={copy.home.summaryLabel}>
+        <MetricCard label={copy.home.metricGroups} value="12" icon={<Users size={19} />} />
+        <MetricCard label={copy.home.metricFinished} value={finishedMatchCount.toString()} icon={<Activity size={19} />} />
+        <MetricCard label={copy.home.metricScheduled} value={scheduledMatchCount.toString()} icon={<CalendarDays size={19} />} />
         <MetricCard
-          label="Источники"
-          value={`${activeSourceCount}/${feedPayload?.sources.length ?? 0}`}
-          icon={<Rss size={19} />}
+          label={copy.home.metricFeed}
+          value={formatDateTime(feedPayload?.fetchedAt ?? null, dateLocale, copy.common.noDate)}
+          icon={<ShieldCheck size={19} />}
         />
-        <MetricCard
-          label="Обновлено"
-          value={formatDateTime(feedPayload?.fetchedAt ?? null)}
-          icon={<CalendarDays size={19} />}
-        />
-      </section>
-
-      <section className="controls-panel" aria-label="Фильтры">
-        <div className="search-box">
-          <Search size={18} aria-hidden="true" />
-          <input
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Поиск по команде, матчу или теме"
-            aria-label="Поиск"
-          />
-        </div>
-
-        <div className="segmented-control" aria-label="Тип материалов">
-          {TYPE_FILTERS.map((filterOption) => (
-            <button
-              key={filterOption.value}
-              type="button"
-              className={selectedType === filterOption.value ? "active" : ""}
-              onClick={() => setSelectedType(filterOption.value)}
-            >
-              {filterOption.label}
-            </button>
-          ))}
-        </div>
-
-        <select
-          className="source-select"
-          value={selectedSource}
-          onChange={(event) => setSelectedSource(event.target.value)}
-          aria-label="Источник"
-        >
-          {sourceOptions.map((sourceName) => (
-            <option key={sourceName} value={sourceName}>
-              {sourceName === "all" ? "Все источники" : sourceName}
-            </option>
-          ))}
-        </select>
       </section>
 
       {loadError ? <ErrorBanner message={loadError} /> : null}
-      {feedPayload ? <SourceStatusList feedPayload={feedPayload} /> : null}
 
-      <section className="content-grid" aria-live="polite">
-        {isLoading && !feedPayload ? <LoadingState /> : null}
-        {!isLoading && visibleItems.length === 0 ? <EmptyState /> : null}
-        {visibleItems.map((feedItem) => (
-          <FeedCard key={feedItem.id} feedItem={feedItem} />
+      <section className="facts-strip" aria-label={copy.home.factsLabel}>
+        {copy.tournamentFacts.map((fact) => (
+          <article key={fact.label} className="fact-item">
+            <span>{fact.label}</span>
+            <strong>{fact.value}</strong>
+          </article>
         ))}
       </section>
+
+      <section className="dashboard-grid" aria-label={copy.home.dataLabel}>
+        <TournamentTable
+          selectedGroup={selectedGroup}
+          selectedGroupCode={selectedGroupCode}
+          onSelectGroup={setSelectedGroupCode}
+          copy={copy.tournamentTable}
+        />
+        <StatisticsPanel
+          playerStatistics={playerStatistics}
+          teamStatistics={localizedTeamStatistics}
+          copy={copy.statisticsPanel}
+        />
+      </section>
+
+      <section className="panel-section" aria-labelledby="calendar-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{copy.home.matchesEyebrow}</p>
+            <h2 id="calendar-title">{copy.home.matchesTitle}</h2>
+          </div>
+          <div className="match-controls">
+            <div className="search-box">
+              <Search size={18} aria-hidden="true" />
+              <input
+                value={searchText}
+                onChange={(event) => setSearchText(event.target.value)}
+                placeholder={copy.home.searchPlaceholder}
+                aria-label={copy.home.searchLabel}
+              />
+            </div>
+            <div className="segmented-control" aria-label={copy.home.matchFilterLabel}>
+              {matchFilters.map((filterOption) => (
+                <button
+                  key={filterOption.value}
+                  type="button"
+                  className={selectedMatchFilter === filterOption.value ? "active" : ""}
+                  onClick={() => setSelectedMatchFilter(filterOption.value)}
+                >
+                  {filterOption.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="match-list" aria-live="polite">
+          {visibleMatches.map((matchEntry) => (
+            <MatchRow
+              key={`${matchEntry.groupCode}-${matchEntry.homeTeam}-${matchEntry.awayTeam}`}
+              matchEntry={matchEntry}
+              onOpenReport={setSelectedMatchReport}
+              copy={copy.matchRow}
+              commonCopy={copy.common}
+              dateLocale={dateLocale}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="panel-section" aria-labelledby="news-title">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">{copy.home.newsEyebrow}</p>
+            <h2 id="news-title">{copy.home.newsTitle}</h2>
+          </div>
+          <button className="secondary-action compact" type="button" onClick={() => setIsNewsModalOpen(true)}>
+            <Plane size={17} aria-hidden="true" />
+            {copy.common.open}
+          </button>
+        </div>
+
+        <div className="news-grid">
+          {liveNewsItems.slice(0, 3).map((newsItem) => (
+            <NewsCard key={`${newsItem.title}-${newsItem.publishedAt}`} newsItem={newsItem} dateLocale={dateLocale} />
+          ))}
+        </div>
+      </section>
+
+      {isNewsModalOpen ? (
+        <NewsModal
+          newsItems={liveNewsItems}
+          onClose={() => setIsNewsModalOpen(false)}
+          copy={copy.newsModal}
+          dateLocale={dateLocale}
+        />
+      ) : null}
+      {selectedMatchReport ? (
+        <MatchReportModal
+          matchEntry={selectedMatchReport}
+          onClose={() => setSelectedMatchReport(null)}
+          copy={copy.matchReport}
+          commonCopy={copy.common}
+          dateLocale={dateLocale}
+        />
+      ) : null}
     </main>
   );
 }
 
-type MetricCardProperties = {
-  label: string;
-  value: string;
-  icon: ReactElement;
-};
+function filterMatches(searchText: string, selectedMatchFilter: MatchFilter): MatchEntry[] {
+  const normalizedSearchText = searchText.trim().toLowerCase();
+  const filteredMatches: MatchEntry[] = [];
 
-function MetricCard(properties: MetricCardProperties): ReactElement {
-  return (
-    <article className="metric-card">
-      <div className="metric-icon">{properties.icon}</div>
-      <div>
-        <span>{properties.label}</span>
-        <strong>{properties.value}</strong>
-      </div>
-    </article>
-  );
-}
+  for (const matchEntry of allMatches) {
+    if (selectedMatchFilter !== "all" && matchEntry.status !== selectedMatchFilter) {
+      continue;
+    }
 
-type FeedCardProperties = {
-  feedItem: WorldCupFeedItem;
-};
+    if (normalizedSearchText && !matchesSearchText(matchEntry, normalizedSearchText)) {
+      continue;
+    }
 
-function FeedCard(properties: FeedCardProperties): ReactElement {
-  const { feedItem } = properties;
-  const typeLabel = feedItem.type === "news" ? "Новость" : "Отчет";
-
-  return (
-    <article className={`feed-card ${feedItem.type}`}>
-      {feedItem.imageUrl ? (
-        <img className="feed-image" src={feedItem.imageUrl} alt="" loading="lazy" />
-      ) : (
-        <div className="feed-image report-image" aria-hidden="true">
-          <FileText size={42} />
-        </div>
-      )}
-
-      <div className="feed-body">
-        <div className="feed-meta">
-          <span>{typeLabel}</span>
-          <span>{feedItem.sourceName}</span>
-          {feedItem.groupName ? <span>{feedItem.groupName}</span> : null}
-        </div>
-        <h2>{feedItem.title}</h2>
-        <p>{feedItem.summary}</p>
-        <div className="feed-footer">
-          <time>{formatDateTime(feedItem.publishedAt)}</time>
-          <a href={feedItem.link} target="_blank" rel="noreferrer">
-            Открыть
-            <ExternalLink size={15} aria-hidden="true" />
-          </a>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-type SourceStatusListProperties = {
-  feedPayload: WorldCupFeedPayload;
-};
-
-function SourceStatusList(properties: SourceStatusListProperties): ReactElement | null {
-  const failedSources = properties.feedPayload.sources.filter(
-    (sourceStatus) => sourceStatus.status === "error"
-  );
-
-  if (failedSources.length === 0) {
-    return null;
+    filteredMatches.push(matchEntry);
   }
 
-  return (
-    <section className="source-errors" aria-label="Проблемы источников">
-      {failedSources.map((sourceStatus) => (
-        <div key={sourceStatus.url} className="source-error">
-          <AlertTriangle size={17} aria-hidden="true" />
-          <span>{sourceStatus.name}: {sourceStatus.message}</span>
-        </div>
-      ))}
-    </section>
-  );
+  return filteredMatches;
 }
 
-type ErrorBannerProperties = {
-  message: string;
-};
+function matchesSearchText(matchEntry: MatchEntry, normalizedSearchText: string): boolean {
+  const searchableMatchText = [
+    matchEntry.homeTeam,
+    matchEntry.awayTeam,
+    matchEntry.groupCode,
+    matchEntry.city,
+    matchEntry.venue
+  ]
+    .join(" ")
+    .toLowerCase();
 
-function ErrorBanner(properties: ErrorBannerProperties): ReactElement {
-  return (
-    <section className="error-banner" role="alert">
-      <AlertTriangle size={18} aria-hidden="true" />
-      <span>{properties.message}</span>
-    </section>
-  );
+  return searchableMatchText.includes(normalizedSearchText);
 }
 
-function LoadingState(): ReactElement {
-  return (
-    <div className="state-card">
-      <RefreshCw className="spin" size={24} aria-hidden="true" />
-      <span>Загрузка свежей ленты</span>
-    </div>
-  );
+function toChampionshipNewsItem(feedItem: WorldCupFeedItem): ChampionshipNewsItem {
+  return {
+    title: feedItem.title,
+    summary: feedItem.summary,
+    sourceName: feedItem.sourceName,
+    publishedAt: feedItem.publishedAt ?? new Date().toISOString()
+  };
 }
 
-function EmptyState(): ReactElement {
-  return (
-    <div className="state-card">
-      <Search size={24} aria-hidden="true" />
-      <span>Материалы не найдены</span>
-    </div>
-  );
+function toLocalizedChampionshipNewsItems(newsCopies: AppCopy["fallbackNews"]): ChampionshipNewsItem[] {
+  return newsCopies.map((newsCopy) => ({
+    title: newsCopy.title,
+    summary: newsCopy.summary,
+    sourceName: newsCopy.sourceName,
+    publishedAt: newsCopy.publishedAt
+  }));
 }
 
-function formatDateTime(value: string | null): string {
+function formatDateTime(value: string | null, dateLocale: string, noDateLabel: string): string {
   if (!value) {
-    return "нет даты";
+    return noDateLabel;
   }
 
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat(dateLocale, {
     dateStyle: "medium",
     timeStyle: "short",
     timeZone: APPLICATION_TIME_ZONE

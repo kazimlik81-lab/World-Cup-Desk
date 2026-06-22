@@ -16,14 +16,22 @@ Production-shaped World Cup news and report desk.
 
 ```powershell
 npm install
-npm run dev
+npm run dev:https
+```
+
+If the browser has not trusted the local development certificate yet, run once:
+
+```powershell
+npm run dev:https:trust
 ```
 
 Open:
 
 ```text
-http://127.0.0.1:15174
+https://127.0.0.1:15173
 ```
+
+The HTTPS development proxy forwards to the internal Next.js server on `127.0.0.1:15174`.
 
 ## Local Windows desktop development
 

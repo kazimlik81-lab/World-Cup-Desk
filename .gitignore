@@ -1,19 +1,45 @@
+# Dependencies
 node_modules/
+
+# Next.js
 .next/
+out/
+
+# Electron and packaging output
 release/
 dist/
-out/
-coverage/
+*.blockmap
+*.exe
+*.msi
+*.dmg
+*.AppImage
 
+# Test and coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+startup.log
 
+# Local environment files
 .env
 .env.*
 !.env.example
+!.env.*.example
+*.local
 
+# Local application state
+electron/application-settings.json
+electron/certificates/
+
+# Secrets and certificates
 *.key
 *.pem
 *.p12
@@ -24,15 +50,18 @@ pnpm-debug.log*
 *.jks
 *.keystore
 *.mobileprovision
-*.env.local
-*.local
 
-*.log
-startup.log
-electron/application-settings.json
-electron/certificates/
+# TypeScript and build caches
+*.tsbuildinfo
+.eslintcache
+.turbo/
+.vercel/
 
+# Operating system files
 .DS_Store
 Thumbs.db
+Desktop.ini
+
+# Editors
 .idea/
 .vscode/

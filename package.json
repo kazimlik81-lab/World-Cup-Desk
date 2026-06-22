@@ -8,6 +8,8 @@
   "productName": "World Cup Desk",
   "scripts": {
     "dev": "next dev -H 127.0.0.1 -p 15174",
+    "dev:https": "node scripts/dev-https.mjs",
+    "dev:https:trust": "powershell -ExecutionPolicy Bypass -File scripts/trust-dev-certificate.ps1",
     "dev:desktop": "node scripts/dev-desktop.mjs",
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
