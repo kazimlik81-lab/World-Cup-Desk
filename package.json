@@ -12,8 +12,12 @@
     "dev:https:trust": "powershell -ExecutionPolicy Bypass -File scripts/trust-dev-certificate.ps1",
     "dev:desktop": "node scripts/dev-desktop.mjs",
     "build": "next build",
-    "start": "next start -H 0.0.0.0 -p 3000",
+    "build:pages": "node scripts/build-github-pages.mjs",
+    "postbuild": "node -e \"const fs=require('node:fs');const path=require('node:path');for (const [source,target] of [['public','.next/standalone/public'],['.next/static','.next/standalone/.next/static']]){if(!fs.existsSync(source))continue;fs.rmSync(target,{recursive:true,force:true});fs.mkdirSync(path.dirname(target),{recursive:true});fs.cpSync(source,target,{recursive:true});}\"",
+    "start": "node .next/standalone/server.js",
     "desktop:open": "electron electron/main.cjs",
+    "android:debug": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Task assembleDebug",
+    "android:bundle": "powershell -ExecutionPolicy Bypass -File scripts/build-android.ps1 -Task bundleRelease",
     "pack:win": "npm run build && electron-builder --win --x64 --dir",
     "dist:win": "npm run build && electron-builder --win --x64",
     "check": "next build"
