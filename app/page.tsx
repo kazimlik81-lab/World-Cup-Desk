@@ -176,7 +176,7 @@ export default function Home(properties: HomeProperties): ReactElement {
     <>
       <SiteHeader copy={copy} selectedLanguage={selectedLanguage} onSelectLanguage={setSelectedLanguage} />
 
-      <main id="top" className="application-shell">
+      <main id="top" className="application-shell" lang={selectedLanguage}>
       <section className="hero-panel" aria-label={copy.home.heroLabel}>
         <div className="hero-content">
           <div className="brand-row">

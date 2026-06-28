@@ -79,10 +79,11 @@ export function buildLanguageMatchPath(languageCode: LanguageCode, matchSlug: st
 }
 
 export function buildLanguageAlternates(
-  buildPathForLanguage: (languageCode: LanguageCode) => string
+  buildPathForLanguage: (languageCode: LanguageCode) => string,
+  xDefaultPathname = "/"
 ): Record<string, string> {
   const languageAlternates: Record<string, string> = {
-    "x-default": buildCanonicalUrl("/")
+    "x-default": buildCanonicalUrl(xDefaultPathname)
   };
 
   for (const languageCode of supportedLanguageCodes) {

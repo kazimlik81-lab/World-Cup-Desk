@@ -65,7 +65,10 @@ export async function generateMetadata(properties: MatchPageProperties): Promise
     description: seoCopy.buildMatchDescription(matchEntry),
     alternates: {
       canonical: buildCanonicalUrl(canonicalPath),
-      languages: buildLanguageAlternates((languageCode) => buildLanguageMatchPath(languageCode, matchSlug))
+      languages: buildLanguageAlternates(
+        (languageCode) => buildLanguageMatchPath(languageCode, matchSlug),
+        buildLanguageMatchPath("en", matchSlug)
+      )
     },
     openGraph: {
       type: "article",
@@ -107,7 +110,7 @@ export default async function MatchPage(properties: MatchPageProperties): Promis
   const structuredData = buildSportsEventStructuredData(matchEntry, language, matchSlug);
 
   return (
-    <main className="match-detail-shell">
+    <main className="match-detail-shell" lang={language}>
       <section className="match-detail-hero" aria-labelledby="match-detail-title">
         <Link className="match-detail-back" href={buildLanguageHomePath(language)}>
           {seoCopy.matchPageBack}
@@ -208,6 +211,14 @@ function buildSportsEventStructuredData(
     eventStatus,
     sport: "Football",
     inLanguage: language,
+    homeTeam: {
+      "@type": "SportsTeam",
+      name: matchEntry.homeTeam
+    },
+    awayTeam: {
+      "@type": "SportsTeam",
+      name: matchEntry.awayTeam
+    },
     competitor: [
       {
         "@type": "SportsTeam",

@@ -47,8 +47,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
         changeFrequency: matchEntry.status === "finished" ? "daily" : "hourly",
         priority: matchEntry.status === "finished" ? 0.82 : 0.78,
         alternates: {
-          languages: buildLanguageAlternates((alternateLanguageCode) =>
-            buildLanguageMatchPath(alternateLanguageCode, matchSlug)
+          languages: buildLanguageAlternates(
+            (alternateLanguageCode) => buildLanguageMatchPath(alternateLanguageCode, matchSlug),
+            buildLanguageMatchPath("en", matchSlug)
           )
         }
       });
