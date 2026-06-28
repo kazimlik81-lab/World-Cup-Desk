@@ -1,13 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import "@/app/globals.css";
 import "@/app/site-header.css";
 import "@/app/dashboard-layout.css";
 import "@/app/dashboard-components.css";
 import "@/app/dashboard-modals.css";
+import "@/app/match-detail.css";
 import {
   buildCanonicalUrl,
+  buildLanguageAlternates,
+  buildLanguageHomePath,
   getPublicSiteUrl,
   SITE_DESCRIPTION,
   SITE_IMAGE_ALT,
@@ -39,7 +42,8 @@ export const metadata: Metadata = {
   creator: SITE_NAME,
   publisher: SITE_NAME,
   alternates: {
-    canonical: buildCanonicalUrl("/")
+    canonical: buildCanonicalUrl("/"),
+    languages: buildLanguageAlternates(buildLanguageHomePath)
   },
   openGraph: {
     type: "website",
@@ -92,6 +96,9 @@ type RootLayoutProperties = {
 };
 
 export default function RootLayout(properties: RootLayoutProperties): ReactNode {
+  const bodyStyle = {
+    "--world-cup-hero-image": `url("${buildCanonicalUrl(SITE_IMAGE_PATH)}")`
+  } as CSSProperties;
   const websiteStructuredData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -113,7 +120,9 @@ export default function RootLayout(properties: RootLayoutProperties): ReactNode 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteStructuredData) }}
         />
       </head>
-      <body className={inter.variable}>{properties.children}</body>
+      <body className={inter.variable} style={bodyStyle}>
+        {properties.children}
+      </body>
     </html>
   );
 }

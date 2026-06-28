@@ -133,6 +133,54 @@
   scrollbar-color: rgba(32, 223, 210, 0.48) transparent;
 }
 
+.match-report-index {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.match-report-link-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow: auto;
+  padding-right: 4px;
+  scrollbar-color: rgba(32, 223, 210, 0.48) transparent;
+}
+
+.match-report-link-grid a {
+  display: grid;
+  gap: 5px;
+  min-height: 76px;
+  padding: 10px;
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.055);
+  transition:
+    background var(--dur-fast) var(--ease-smooth),
+    border-color var(--dur-fast) var(--ease-smooth),
+    transform var(--dur-fast) var(--ease-liquid);
+}
+
+.match-report-link-grid a:hover {
+  transform: translateY(-2px);
+  border-color: rgba(32, 223, 210, 0.32);
+  background: rgba(32, 223, 210, 0.08);
+}
+
+.match-report-link-grid a:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.match-report-link-grid span,
+.match-report-link-grid small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .match-row {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr) 86px;
@@ -289,6 +337,10 @@
   }
 
   .match-row {
+    grid-template-columns: 1fr;
+  }
+
+  .match-report-link-grid {
     grid-template-columns: 1fr;
   }
 

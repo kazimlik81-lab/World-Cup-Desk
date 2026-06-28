@@ -5,13 +5,25 @@ import { DEFAULT_LANGUAGE, getSupportedLanguage, type LanguageCode } from "@/lib
 
 const LANGUAGE_STORAGE_KEY = "worldCupDeskLanguage";
 
-export function useLanguagePreference(): readonly [LanguageCode, (languageCode: LanguageCode) => void] {
-  const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(DEFAULT_LANGUAGE);
+type LanguagePreferenceOptions = {
+  readStoredLanguage?: boolean;
+};
+
+export function useLanguagePreference(
+  initialLanguage: LanguageCode = DEFAULT_LANGUAGE,
+  options: LanguagePreferenceOptions = {}
+): readonly [LanguageCode, (languageCode: LanguageCode) => void] {
+  const shouldReadStoredLanguage = options.readStoredLanguage ?? true;
+  const [selectedLanguage, setSelectedLanguage] = useState<LanguageCode>(initialLanguage);
 
   useEffect(() => {
+    if (!shouldReadStoredLanguage) {
+      return;
+    }
+
     const storedLanguage = window.localStorage.getItem(LANGUAGE_STORAGE_KEY);
     setSelectedLanguage(getSupportedLanguage(storedLanguage));
-  }, []);
+  }, [shouldReadStoredLanguage]);
 
   useEffect(() => {
     document.documentElement.lang = selectedLanguage;

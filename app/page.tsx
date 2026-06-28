@@ -25,7 +25,9 @@ import { SiteHeader } from "@/app/components/site-header";
 import { StatisticsPanel } from "@/app/components/statistics-panel";
 import { TournamentTable } from "@/app/components/tournament-table";
 import { APPLICATION_TIME_ZONE } from "@/lib/constants";
-import { appCopies, languageDateLocales, type AppCopy } from "@/lib/localization";
+import { appCopies, DEFAULT_LANGUAGE, languageDateLocales, type AppCopy, type LanguageCode } from "@/lib/localization";
+import { buildMatchSlug } from "@/lib/match-routes";
+import { seoCopies } from "@/lib/seo-copy";
 import { useLanguagePreference } from "@/lib/use-language-preference";
 import {
   allMatches,
@@ -41,13 +43,22 @@ import type { WorldCupFeedItem, WorldCupFeedPayload } from "@/lib/types";
 
 type MatchFilter = "all" | "finished" | "scheduled";
 
+type HomeProperties = {
+  initialLanguage?: LanguageCode;
+  readStoredLanguage?: boolean;
+};
+
 const feedEndpoint =
   process.env.NEXT_PUBLIC_WORLD_CUP_DESK_STATIC_EXPORT === "1"
     ? "world-cup-feed.json"
     : "/api/world-cup";
 
-export default function Home(): ReactElement {
-  const [selectedLanguage, setSelectedLanguage] = useLanguagePreference();
+export default function Home(properties: HomeProperties): ReactElement {
+  const initialLanguage = properties.initialLanguage ?? DEFAULT_LANGUAGE;
+  const readStoredLanguage = properties.readStoredLanguage ?? true;
+  const [selectedLanguage, setSelectedLanguage] = useLanguagePreference(initialLanguage, {
+    readStoredLanguage
+  });
   const [feedPayload, setFeedPayload] = useState<WorldCupFeedPayload | null>(null);
   const [selectedGroupCode, setSelectedGroupCode] = useState<GroupCode>("A");
   const [selectedMatchFilter, setSelectedMatchFilter] = useState<MatchFilter>("all");
@@ -63,6 +74,7 @@ export default function Home(): ReactElement {
     { value: "finished", label: copy.matchFilters.finished },
     { value: "scheduled", label: copy.matchFilters.scheduled }
   ];
+  const seoCopy = seoCopies[selectedLanguage];
 
   const loadFeed = useCallback(async (): Promise<void> => {
     setIsLoading(true);
@@ -287,6 +299,26 @@ export default function Home(): ReactElement {
               dateLocale={dateLocale}
             />
           ))}
+        </div>
+
+        <div className="match-report-index" aria-label={seoCopy.matchCenterLabel}>
+          <h3>{seoCopy.matchCenterTitle}</h3>
+          <div className="match-report-link-grid">
+            {allMatches.map((matchEntry) => (
+              <Link
+                key={`${matchEntry.matchDate}-${matchEntry.homeTeam}-${matchEntry.awayTeam}`}
+                href={`/${selectedLanguage}/matches/${buildMatchSlug(matchEntry)}`}
+              >
+                <span>
+                  {copy.common.group} {matchEntry.groupCode}
+                </span>
+                <strong>
+                  {matchEntry.homeTeam} {copy.common.versus} {matchEntry.awayTeam}
+                </strong>
+                <small>{matchEntry.scoreLabel ?? copy.common.soon}</small>
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 
