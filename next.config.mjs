@@ -38,19 +38,29 @@ const securityHeaders = [
   }
 ];
 
+const isStaticExport = process.env.WORLD_CUP_DESK_STATIC_EXPORT === "1";
+const siteBasePath = process.env.WORLD_CUP_DESK_SITE_BASE_PATH ?? "";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  output: isStaticExport ? "export" : "standalone",
+  basePath: isStaticExport ? siteBasePath : undefined,
+  assetPrefix: isStaticExport && siteBasePath ? `${siteBasePath}/` : undefined,
+  images: {
+    unoptimized: isStaticExport
+  },
+  trailingSlash: isStaticExport,
   poweredByHeader: false,
-  reactStrictMode: true,
-  async headers() {
-    return [
-      {
-        source: "/:path*",
-        headers: securityHeaders
-      }
-    ];
-  }
+  reactStrictMode: true
 };
+
+if (!isStaticExport) {
+  nextConfig.headers = async () => [
+    {
+      source: "/:path*",
+      headers: securityHeaders
+    }
+  ];
+}
 
 export default nextConfig;

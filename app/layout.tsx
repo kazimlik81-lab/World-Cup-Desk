@@ -76,8 +76,8 @@ export const metadata: Metadata = {
     }
   },
   icons: {
-    icon: "/favicon.svg",
-    apple: SITE_IMAGE_PATH
+    icon: buildCanonicalUrl("/favicon.svg"),
+    apple: buildCanonicalUrl(SITE_IMAGE_PATH)
   },
   manifest: "/manifest.webmanifest"
 };

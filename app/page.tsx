@@ -41,6 +41,11 @@ import type { WorldCupFeedItem, WorldCupFeedPayload } from "@/lib/types";
 
 type MatchFilter = "all" | "finished" | "scheduled";
 
+const feedEndpoint =
+  process.env.NEXT_PUBLIC_WORLD_CUP_DESK_STATIC_EXPORT === "1"
+    ? "world-cup-feed.json"
+    : "/api/world-cup";
+
 export default function Home(): ReactElement {
   const [selectedLanguage, setSelectedLanguage] = useLanguagePreference();
   const [feedPayload, setFeedPayload] = useState<WorldCupFeedPayload | null>(null);
@@ -64,7 +69,7 @@ export default function Home(): ReactElement {
     setLoadError(null);
 
     try {
-      const response = await fetch(`/api/world-cup?cacheBust=${Date.now()}`, {
+      const response = await fetch(`${feedEndpoint}?cacheBust=${Date.now()}`, {
         cache: "no-store"
       });
 

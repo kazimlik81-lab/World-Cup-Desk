@@ -57,6 +57,9 @@ android/local.properties
 android/keystore.properties
 android/app/build/
 
+# Generated static deployment data
+public/world-cup-feed.json
+
 # TypeScript and build caches
 *.tsbuildinfo
 .eslintcache

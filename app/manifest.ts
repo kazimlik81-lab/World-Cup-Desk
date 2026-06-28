@@ -10,13 +10,15 @@ import {
   SITE_THEME_COLOR
 } from "@/lib/site-metadata";
 
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: SITE_NAME,
     short_name: SITE_NAME,
     description: SITE_DESCRIPTION,
-    start_url: "/",
-    scope: "/",
+    start_url: ".",
+    scope: ".",
     display: "standalone",
     background_color: SITE_BACKGROUND_COLOR,
     theme_color: SITE_THEME_COLOR,
@@ -24,13 +26,13 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["sports", "news", "utilities"],
     icons: [
       {
-        src: "/favicon.svg",
+        src: "favicon.svg",
         sizes: "any",
         type: "image/svg+xml",
         purpose: "any"
       },
       {
-        src: SITE_IMAGE_PATH,
+        src: "assets/world-cup-command-center.png",
         sizes: `${SITE_IMAGE_WIDTH}x${SITE_IMAGE_HEIGHT}`,
         type: "image/png",
         purpose: "any"
@@ -38,7 +40,7 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     screenshots: [
       {
-        src: SITE_IMAGE_PATH,
+        src: "assets/world-cup-command-center.png",
         sizes: `${SITE_IMAGE_WIDTH}x${SITE_IMAGE_HEIGHT}`,
         type: "image/png",
         form_factor: "wide",

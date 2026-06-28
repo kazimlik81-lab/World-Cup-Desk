@@ -165,6 +165,8 @@ export type AppCopy = {
 
 export const DEFAULT_LANGUAGE: LanguageCode = "ru";
 
+export const supportedLanguageCodes: LanguageCode[] = ["ru", "en", "az", "tr"];
+
 export const languageOptions: LanguageOption[] = [
   { code: "ru", label: "Русский", shortLabel: "RU" },
   { code: "en", label: "English", shortLabel: "EN" },
@@ -593,11 +595,15 @@ export const appCopies: Record<LanguageCode, AppCopy> = {
 };
 
 export function getSupportedLanguage(value: string | null): LanguageCode {
-  if (value === "ru" || value === "en" || value === "az" || value === "tr") {
+  if (isSupportedLanguage(value)) {
     return value;
   }
 
   return DEFAULT_LANGUAGE;
+}
+
+export function isSupportedLanguage(value: string | null): value is LanguageCode {
+  return value === "ru" || value === "en" || value === "az" || value === "tr";
 }
 
 export function interpolateMatchText(template: string, matchEntry: MatchEntry): string {

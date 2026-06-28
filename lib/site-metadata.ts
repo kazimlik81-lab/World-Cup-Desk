@@ -1,3 +1,5 @@
+import { supportedLanguageCodes, type LanguageCode } from "@/lib/localization";
+
 export const SITE_NAME = "World Cup Desk";
 
 export const SITE_TITLE =
@@ -32,6 +34,13 @@ export const SITE_IMAGE_HEIGHT = 941;
 
 export const SITE_IMAGE_ALT = "World Cup Desk tournament dashboard preview";
 
+export const languageHreflangCodes: Record<LanguageCode, string> = {
+  ru: "ru",
+  en: "en",
+  az: "az",
+  tr: "tr"
+};
+
 const LOCAL_DEVELOPMENT_SITE_URL = "http://localhost:3000";
 
 export function getPublicSiteUrl(): URL {
@@ -41,7 +50,7 @@ export function getPublicSiteUrl(): URL {
     configuredSiteUrl ? "public site URL" : "local development site URL"
   );
 
-  parsedSiteUrl.pathname = "/";
+  parsedSiteUrl.pathname = normalizeSitePathname(parsedSiteUrl.pathname);
   parsedSiteUrl.search = "";
   parsedSiteUrl.hash = "";
 
@@ -49,7 +58,40 @@ export function getPublicSiteUrl(): URL {
 }
 
 export function buildCanonicalUrl(pathname: string): string {
-  return new URL(pathname, getPublicSiteUrl()).toString();
+  const siteUrl = getPublicSiteUrl();
+  const siteBasePath = siteUrl.pathname.endsWith("/")
+    ? siteUrl.pathname
+    : `${siteUrl.pathname}/`;
+  const requestedPathname = pathname.startsWith("/") ? pathname.slice(1) : pathname;
+  const canonicalUrl = new URL(siteUrl.toString());
+
+  canonicalUrl.pathname = normalizeJoinedPathname(siteBasePath, requestedPathname);
+
+  return canonicalUrl.toString();
+}
+
+export function buildLanguageHomePath(languageCode: LanguageCode): string {
+  return `/${languageCode}`;
+}
+
+export function buildLanguageMatchPath(languageCode: LanguageCode, matchSlug: string): string {
+  return `/${languageCode}/matches/${matchSlug}`;
+}
+
+export function buildLanguageAlternates(
+  buildPathForLanguage: (languageCode: LanguageCode) => string
+): Record<string, string> {
+  const languageAlternates: Record<string, string> = {
+    "x-default": buildCanonicalUrl("/")
+  };
+
+  for (const languageCode of supportedLanguageCodes) {
+    languageAlternates[languageHreflangCodes[languageCode]] = buildCanonicalUrl(
+      buildPathForLanguage(languageCode)
+    );
+  }
+
+  return languageAlternates;
 }
 
 function getConfiguredSiteUrl(): string | null {
@@ -98,4 +140,22 @@ function parsePublicSiteUrl(rawUrl: string, sourceName: string): URL {
 
 function isLocalHttpHost(hostname: string): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+}
+
+function normalizeSitePathname(pathname: string): string {
+  if (!pathname || pathname === "/") {
+    return "/";
+  }
+
+  return pathname.endsWith("/") ? pathname : `${pathname}/`;
+}
+
+function normalizeJoinedPathname(basePathname: string, requestedPathname: string): string {
+  const normalizedBasePathname = normalizeSitePathname(basePathname);
+
+  if (!requestedPathname) {
+    return normalizedBasePathname;
+  }
+
+  return `${normalizedBasePathname}${requestedPathname}`.replace(/\/{2,}/g, "/");
 }
