@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="World Cup Desk">
+  <rect width="64" height="64" rx="12" fill="#0f9f8d"/>
+  <path d="M20 14h24v9c0 7.2-4.5 13.4-10.8 15.8V47h8v5H23v-5h8v-8.2C24.5 36.4 20 30.2 20 23v-9Z" fill="#ffffff"/>
+  <path d="M16 19h5v6c0 3.2 1.2 5.8 3.4 7.8C19.5 32.2 16 27.9 16 22.7V19Zm27 0h5v3.7c0 5.2-3.5 9.5-8.4 10.1 2.2-2 3.4-4.6 3.4-7.8v-6Z" fill="#dffcf7"/>
+  <path d="M25 19h14v5H25v-5Z" fill="#7b56c7"/>
+</svg>

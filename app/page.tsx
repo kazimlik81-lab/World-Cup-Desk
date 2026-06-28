@@ -4,7 +4,6 @@ import {
   Activity,
   CalendarDays,
   Gamepad2,
-  LockKeyhole,
   Plane,
   RefreshCw,
   Search,
@@ -15,12 +14,14 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from "react";
 import { ErrorBanner } from "@/app/components/error-banner";
+import { HeroSecurityPanel } from "@/app/components/hero-security-panel";
 import { LanguageSelector } from "@/app/components/language-selector";
 import { MatchReportModal } from "@/app/components/match-report-modal";
 import { MatchRow } from "@/app/components/match-row";
 import { MetricCard } from "@/app/components/metric-card";
 import { NewsCard } from "@/app/components/news-card";
 import { NewsModal } from "@/app/components/news-modal";
+import { SiteHeader } from "@/app/components/site-header";
 import { StatisticsPanel } from "@/app/components/statistics-panel";
 import { TournamentTable } from "@/app/components/tournament-table";
 import { APPLICATION_TIME_ZONE } from "@/lib/constants";
@@ -155,7 +156,10 @@ export default function Home(): ReactElement {
   const scheduledMatchCount = allMatches.length - finishedMatchCount;
 
   return (
-    <main className="application-shell">
+    <>
+      <SiteHeader copy={copy} selectedLanguage={selectedLanguage} onSelectLanguage={setSelectedLanguage} />
+
+      <main id="top" className="application-shell">
       <section className="hero-panel" aria-label={copy.home.heroLabel}>
         <div className="hero-content">
           <div className="brand-row">
@@ -193,19 +197,14 @@ export default function Home(): ReactElement {
           </div>
         </div>
 
-        <div className="security-panel" aria-label={copy.home.securityLabel}>
-          <div className="security-icon">
-            <LockKeyhole size={22} aria-hidden="true" />
-          </div>
-          <div>
-            <span>{copy.home.httpsEnabled}</span>
-            <strong>{copy.home.secureByDefault}</strong>
-            <p>{copy.home.secureCopy}</p>
-          </div>
-        </div>
+        <HeroSecurityPanel
+          copy={copy.home}
+          finishedMatchCount={finishedMatchCount}
+          scheduledMatchCount={scheduledMatchCount}
+        />
       </section>
 
-      <section className="metric-grid" aria-label={copy.home.summaryLabel}>
+      <section id="overview" className="metric-grid" aria-label={copy.home.summaryLabel}>
         <MetricCard label={copy.home.metricGroups} value="12" icon={<Users size={19} />} />
         <MetricCard label={copy.home.metricFinished} value={finishedMatchCount.toString()} icon={<Activity size={19} />} />
         <MetricCard label={copy.home.metricScheduled} value={scheduledMatchCount.toString()} icon={<CalendarDays size={19} />} />
@@ -227,7 +226,7 @@ export default function Home(): ReactElement {
         ))}
       </section>
 
-      <section className="dashboard-grid" aria-label={copy.home.dataLabel}>
+      <section id="data" className="dashboard-grid" aria-label={copy.home.dataLabel}>
         <TournamentTable
           selectedGroup={selectedGroup}
           selectedGroupCode={selectedGroupCode}
@@ -241,7 +240,7 @@ export default function Home(): ReactElement {
         />
       </section>
 
-      <section className="panel-section" aria-labelledby="calendar-title">
+      <section id="calendar" className="panel-section" aria-labelledby="calendar-title">
         <div className="section-heading">
           <div>
             <p className="eyebrow">{copy.home.matchesEyebrow}</p>
@@ -286,7 +285,7 @@ export default function Home(): ReactElement {
         </div>
       </section>
 
-      <section className="panel-section" aria-labelledby="news-title">
+      <section id="news" className="panel-section" aria-labelledby="news-title">
         <div className="section-heading">
           <div>
             <p className="eyebrow">{copy.home.newsEyebrow}</p>
@@ -322,7 +321,8 @@ export default function Home(): ReactElement {
           dateLocale={dateLocale}
         />
       ) : null}
-    </main>
+      </main>
+    </>
   );
 }
 

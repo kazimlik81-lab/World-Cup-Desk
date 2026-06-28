@@ -51,6 +51,12 @@ electron/certificates/
 *.keystore
 *.mobileprovision
 
+# Android local and build output
+android/.gradle/
+android/local.properties
+android/keystore.properties
+android/app/build/
+
 # TypeScript and build caches
 *.tsbuildinfo
 .eslintcache
